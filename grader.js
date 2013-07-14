@@ -37,10 +37,6 @@ var assertFileExists = function(infile) {
     return instr;
 };
 
-var assertUrlExists = function(inurl) {
-    return restler.get(inurl);
-}
-
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
@@ -61,14 +57,16 @@ var checkHtmlFile = function(htmlfile, checksfile) {
 };
 
 var checkHttpUrl = function(httpurl, checksfile) {
-    $ restHtmlFile(httpurl);
-    var checks = loadChecks(checksfile).sort();
-    var out = {};
-    for (var ii in checks) {
-        var present = $(check[ii]).length > 0;
-        out[checks[ii] = present;
-    }
-    return out;
+    rest.get(httpurl).on('complete', function(data) {
+        var $ = cheerio.load(data);
+        var checks = loadChecks(checksfile).sort();
+        var out = {};
+            for(var ii in checks) {
+                var present = $(checks[ii]).length > 0;
+                out[checks[ii]] = present;
+            }
+        return out;
+    });
 };
 
 var clone = function(fn) {
@@ -83,7 +81,7 @@ if(require.main == module) {
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-u, --url <http_url>', 'URL of index.html', clone(assertUrlExists), HTMLURL_DEFAULT)
         .parse(process.argv);
-    if (program.url){
+    if (program.url != null){
         var checkJson = checkHttpUrl(program.url, program.checks)
     }
     else{
